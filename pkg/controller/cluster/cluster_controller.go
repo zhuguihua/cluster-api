@@ -130,6 +130,12 @@ func (r *ReconcileCluster) Reconcile(request reconcile.Request) (_ reconcile.Res
 		// Remove when https://github.com/kubernetes-sigs/controller-runtime/issues/526 is fixed.
 		cluster.SetGroupVersionKind(gvk)
 		if err := r.Client.Status().Patch(ctx, cluster, patchCluster); err != nil {
+			if apierrors.IsNotFound(err) {
+				// This is expected during deletion, since the finalize is removed
+				// during the previous patch command.
+				return
+			}
+
 			klog.Errorf("Error Patching Cluster status %q in namespace %q: %v", cluster.Name, cluster.Namespace, err)
 			if reterr == nil {
 				reterr = err

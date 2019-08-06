@@ -128,6 +128,11 @@ func (r *ReconcileMachine) Reconcile(request reconcile.Request) (_ reconcile.Res
 		// Remove when https://github.com/kubernetes-sigs/controller-runtime/issues/526 is fixed.
 		m.SetGroupVersionKind(gvk)
 		if err := r.Client.Status().Patch(ctx, m, patchMachine); err != nil {
+			if apierrors.IsNotFound(err) {
+				// This is expected during deletion, since the finalize is removed
+				// during the previous patch command.
+				return
+			}
 			klog.Errorf("Error Patching Machine status %q in namespace %q: %v", m.Name, m.Namespace, err)
 			if reterr == nil {
 				reterr = err
